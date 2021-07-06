@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,12 @@ namespace TokenServer
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+                    {
+                        options.LoginPath = "/account/login";
+                    });
 
             services.AddOpenIddict()
 
@@ -46,13 +53,29 @@ namespace TokenServer
                     {
                         apps.Add(new Application("console")
                         {
-                            ClientId = "console",
+                            ClientId = "clientcredentials",
                             ClientSecret = "123456",
                             Permissions = new[] {
                                       Permissions.Endpoints.Token,
                                       Permissions.GrantTypes.ClientCredentials,
                                       Permissions.GrantTypes.RefreshToken,
                                       Permissions.Prefixes.Scope + "api",
+                        }
+                        });
+
+                        apps.Add(new Application("desktopapp")
+                        {
+                            ClientId = "desktopapp",
+                            ClientSecret = "123456",
+                            RedirectUris = new List<string> { "http://127.0.0.1:23480" },
+                            Permissions = new[] {
+                                      Permissions.Endpoints.Token,
+                                      Permissions.Endpoints.Authorization,
+                                      Permissions.GrantTypes.ClientCredentials,
+                                      Permissions.GrantTypes.AuthorizationCode,
+                                      Permissions.GrantTypes.RefreshToken,
+                                      Permissions.Prefixes.Scope + "api",
+                                      Permissions.ResponseTypes.Code
                         }
                         });
                     }
@@ -106,21 +129,25 @@ namespace TokenServer
                     options.DisableAccessTokenEncryption();
 
                     options.SetTokenEndpointUris("/connect/token");
+                    options.SetAuthorizationEndpointUris("/connect/authorize");
 
                     options.AllowClientCredentialsFlow();
                     options.AllowRefreshTokenFlow();
+                    options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange();
 
                     options.AddDevelopmentEncryptionCertificate()
                            .AddDevelopmentSigningCertificate();
 
                     options.UseAspNetCore()
-                           .EnableTokenEndpointPassthrough();
+                           .EnableTokenEndpointPassthrough()
+                           .EnableAuthorizationEndpointPassthrough();
                 });
         }
 
         public void Configure(IApplicationBuilder app)
         {
             app.UseDeveloperExceptionPage();
+            app.UseStaticFiles();
 
             app.UseRouting();
 

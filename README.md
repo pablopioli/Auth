@@ -11,6 +11,8 @@ An token server to use in integration tests. Objectives:
 * Easy to configure with test users, applications and scopes
 * In memory storage
 
+The UI is based on (an euphemism for copied) on https://dev.to/robinvanderknaap/setting-up-an-authorization-server-with-openiddict-part-iv-authorization-code-flow-3eh8
+
 ## MemoryStorage
 
 An storage extension for OpenIddict that stores all information in memory with optional persistence in Json files. Use it in TokenServer or in other projects.
