@@ -1,6 +1,6 @@
 ﻿{
   "profiles": {
-    "OpenIddict": {
+    "TokenServer": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,

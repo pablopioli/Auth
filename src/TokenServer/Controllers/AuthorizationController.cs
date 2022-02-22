@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
+﻿using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using System.Security.Claims;
 
 namespace TokenServer.Controllers
 {
@@ -40,19 +36,16 @@ namespace TokenServer.Controllers
 
                 claimsPrincipal.SetScopes(request.GetScopes());
             }
-
             else if (request.IsAuthorizationCodeGrantType())
             {
                 // Retrieve the claims principal stored in the authorization code
                 claimsPrincipal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
             }
-
             else if (request.IsRefreshTokenGrantType())
             {
                 // Retrieve the claims principal stored in the refresh token.
                 claimsPrincipal = (await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme)).Principal;
             }
-
             else
             {
                 throw new InvalidOperationException("The specified grant type is not supported.");
@@ -62,6 +55,26 @@ namespace TokenServer.Controllers
             var result = SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             return result;
+        }
+
+        [Authorize, FormValueRequired("submit.Accept")]
+        [HttpPost("~/connect/authorize"), ValidateAntiForgeryToken]
+        public IActionResult Accept()
+        {
+            var request = HttpContext.GetOpenIddictServerRequest() ??
+                throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+
+            var principal = new ClaimsPrincipal();
+            var identity = new ClaimsIdentity("test");
+            identity.AddClaim("A", "bb");
+            principal.AddIdentity(identity);
+
+            // Note: in this sample, the granted scopes match the requested scope
+            // but you may want to allow the user to uncheck specific scopes.
+            // For that, simply restrict the list of scopes before calling SetScopes.
+            principal.SetScopes(request.GetScopes());
+
+            return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         [HttpGet("~/connect/authorize")]
@@ -79,13 +92,16 @@ namespace TokenServer.Controllers
             if (!result.Succeeded)
             {
                 return Challenge(
-                    authenticationSchemes: CookieAuthenticationDefaults.AuthenticationScheme,
                     properties: new AuthenticationProperties
                     {
                         RedirectUri = Request.PathBase + Request.Path + QueryString.Create(
                             Request.HasFormContentType ? Request.Form.ToList() : Request.Query.ToList())
-                    });
+                    },
+                    authenticationSchemes: CookieAuthenticationDefaults.AuthenticationScheme);
             }
+
+            //var tt =  User.FindFirstValue(ClaimTypes.NameIdentifier);
+            //var ttt = User.FindFirstValue(ClaimTypes.Email);
 
             // Create a new claims principal
             var claims = new List<Claim>

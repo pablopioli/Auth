@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Globalization;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using OpenIddict.Abstractions;
+﻿using OpenIddict.Abstractions;
 using OpenIddict.MemoryStorage.DataSource;
 using OpenIddict.MemoryStorage.Domain;
+using System.Collections.Immutable;
+using System.Globalization;
+using System.Text.Json;
 using SR = OpenIddict.Abstractions.OpenIddictResources;
 
 namespace OpenIddict.MemoryStorage.Stores
@@ -41,10 +36,11 @@ namespace OpenIddict.MemoryStorage.Stores
 
         public ValueTask DeleteAsync(Application application, CancellationToken cancellationToken)
         {
-            throw new InvalidOperationException();
+            _applicationDataSource.Remove(application);
+            return ValueTask.CompletedTask;
         }
 
-        public ValueTask<Application> FindByClientIdAsync(string identifier, CancellationToken cancellationToken)
+        public ValueTask<Application?> FindByClientIdAsync(string identifier, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(identifier))
             {
@@ -56,7 +52,7 @@ namespace OpenIddict.MemoryStorage.Stores
             return ValueTask.FromResult(app);
         }
 
-        public ValueTask<Application> FindByIdAsync(string identifier, CancellationToken cancellationToken)
+        public ValueTask<Application?> FindByIdAsync(string identifier, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(identifier))
             {
@@ -70,7 +66,20 @@ namespace OpenIddict.MemoryStorage.Stores
 
         public IAsyncEnumerable<Application> FindByPostLogoutRedirectUriAsync(string address, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(address))
+            {
+                throw new ArgumentException(SR.GetResourceString(SR.ID0143), nameof(address));
+            }
+
+            return FindByPostLogoutRedirectUriInternal();
+
+            async IAsyncEnumerable<Application> FindByPostLogoutRedirectUriInternal()
+            {
+                foreach (var app in _applicationDataSource.Applications.Where(x => x.PostLogoutRedirectUris.Any(y => y == address)))
+                {
+                    yield return await Task.FromResult(app);
+                }
+            }
         }
 
         public IAsyncEnumerable<Application> FindByRedirectUriAsync(string address, CancellationToken cancellationToken)
@@ -83,48 +92,57 @@ namespace OpenIddict.MemoryStorage.Stores
             throw new NotImplementedException();
         }
 
-        public ValueTask<string> GetClientIdAsync(Application application, CancellationToken cancellationToken)
+        public ValueTask<string?> GetClientIdAsync(Application application, CancellationToken cancellationToken)
         {
             Check.NotNull(application, nameof(application));
-            return new ValueTask<string>(application.ClientId);
+            return new ValueTask<string?>(application.ClientId);
         }
 
-        public ValueTask<string> GetClientSecretAsync(Application application, CancellationToken cancellationToken)
-        {
-            Check.NotNull(application, nameof(application));
-
-            return new ValueTask<string>(application.ClientSecret);
-        }
-
-        public ValueTask<string> GetClientTypeAsync(Application application, CancellationToken cancellationToken)
+        public ValueTask<string?> GetClientSecretAsync(Application application, CancellationToken cancellationToken)
         {
             Check.NotNull(application, nameof(application));
 
-            return new ValueTask<string>(application.Type);
+            return new ValueTask<string?>(application.ClientSecret);
         }
 
-        public ValueTask<string> GetConsentTypeAsync(Application application, CancellationToken cancellationToken)
+        public ValueTask<string?> GetClientTypeAsync(Application application, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            Check.NotNull(application, nameof(application));
+
+            return new ValueTask<string?>(application.Type);
         }
 
-        public ValueTask<string> GetDisplayNameAsync(Application application, CancellationToken cancellationToken)
+        public ValueTask<string?> GetConsentTypeAsync(Application application, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            Check.NotNull(application, nameof(application));
+
+            return new ValueTask<string?>(application.ConsentType);
+        }
+
+        public ValueTask<string?> GetDisplayNameAsync(Application application, CancellationToken cancellationToken)
+        {
+            Check.NotNull(application, nameof(application));
+
+            return new ValueTask<string?>(application.DisplayName);
         }
 
         public ValueTask<ImmutableDictionary<CultureInfo, string>> GetDisplayNamesAsync(Application application, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            Check.NotNull(application, nameof(application));
+
+            if (application.DisplayNames is null || application.DisplayNames.Count == 0)
+            {
+                return new ValueTask<ImmutableDictionary<CultureInfo, string>>(ImmutableDictionary.Create<CultureInfo, string>());
+            }
+
+            return new ValueTask<ImmutableDictionary<CultureInfo, string>>(application.DisplayNames.ToImmutableDictionary());
         }
 
-        public ValueTask<string> GetIdAsync(Application application, CancellationToken cancellationToken)
+        public ValueTask<string?> GetIdAsync(Application application, CancellationToken cancellationToken)
         {
             Check.NotNull(application, nameof(application));
 
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-            return new ValueTask<string>(application.Id.ToString());
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            return new ValueTask<string?>(application.Id);
         }
 
         public ValueTask<ImmutableArray<string>> GetPermissionsAsync(Application application, CancellationToken cancellationToken)
@@ -188,27 +206,27 @@ namespace OpenIddict.MemoryStorage.Stores
             throw new NotImplementedException();
         }
 
-        public ValueTask SetClientIdAsync(Application application, string identifier, CancellationToken cancellationToken)
+        public ValueTask SetClientIdAsync(Application application, string? identifier, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public ValueTask SetClientSecretAsync(Application application, string secret, CancellationToken cancellationToken)
+        public ValueTask SetClientSecretAsync(Application application, string? secret, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public ValueTask SetClientTypeAsync(Application application, string type, CancellationToken cancellationToken)
+        public ValueTask SetClientTypeAsync(Application application, string? type, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public ValueTask SetConsentTypeAsync(Application application, string type, CancellationToken cancellationToken)
+        public ValueTask SetConsentTypeAsync(Application application, string? type, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public ValueTask SetDisplayNameAsync(Application application, string name, CancellationToken cancellationToken)
+        public ValueTask SetDisplayNameAsync(Application application, string? name, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

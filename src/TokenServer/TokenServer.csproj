@@ -1,13 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>25c8a995-c8fc-4ab7-9de0-982968b6dbf0</UserSecretsId>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\MemoryStorage\OpenIddict.MemoryStorage.csproj" />
-    <PackageReference Include="OpenIddict.AspNetCore" Version="3.0.5" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\MemoryStorage\OpenIddict.MemoryStorage.csproj" />
+		<PackageReference Include="AspNet.Security.OAuth.GitHub" Version="6.0.4" />
+		<PackageReference Include="OpenIddict.AspNetCore" Version="3.1.1" />
+	</ItemGroup>
 
 </Project>

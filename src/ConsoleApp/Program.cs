@@ -11,6 +11,7 @@ namespace ConsoleApp
             {
                 Console.WriteLine("1: Test client credentials");
                 Console.WriteLine("2: Test authorization code with browser login");
+                Console.WriteLine("3: GitHub authentication");
                 Console.WriteLine("Any other key: Exit");
 
                 var option = Console.ReadKey();

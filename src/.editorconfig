@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# RCS1229: Use async/await when necessary
+dotnet_diagnostic.RCS1229.severity = none

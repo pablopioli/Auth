@@ -1,25 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using OpenIddict.Abstractions;
+using OpenIddict.MemoryStorage.Domain;
 using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using OpenIddict.Abstractions;
-using OpenIddict.MemoryStorage.Domain;
 using SR = OpenIddict.Abstractions.OpenIddictResources;
 
 namespace OpenIddict.MemoryStorage.Stores
 {
     public class AuthorizationStore : IOpenIddictAuthorizationStore<Authorization>
     {
-        private static List<Authorization> Authorizations;
-        private readonly string _storageFileName;
+        private static List<Authorization>? Authorizations;
+        private readonly string? _storageFileName;
 
         public AuthorizationStore(OpenIddictMemoryStorageOptions storageOptions)
         {
@@ -30,7 +22,7 @@ namespace OpenIddict.MemoryStorage.Stores
                 if (File.Exists(_storageFileName))
                 {
                     var content = File.ReadAllText(_storageFileName);
-                    Authorizations = JsonConvert.DeserializeObject<List<Authorization>>(content);
+                    Authorizations = JsonSerializer.Deserialize<List<Authorization>>(content);
                 }
                 else
                 {
@@ -53,9 +45,11 @@ namespace OpenIddict.MemoryStorage.Stores
         {
             Check.NotNull(authorization, nameof(authorization));
 
-            Authorizations.Add(authorization);
-
-            SaveAuthorizations();
+            if (Authorizations != null)
+            {
+                Authorizations.Add(authorization);
+                SaveAuthorizations();
+            }
 
             return ValueTask.CompletedTask;
         }
@@ -90,14 +84,14 @@ namespace OpenIddict.MemoryStorage.Stores
             throw new NotImplementedException();
         }
 
-        public ValueTask<Authorization> FindByIdAsync(string identifier, CancellationToken cancellationToken)
+        public ValueTask<Authorization?> FindByIdAsync(string identifier, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(identifier))
             {
                 throw new ArgumentException(SR.GetResourceString(SR.ID0195), nameof(identifier));
             }
 
-            return ValueTask.FromResult(Authorizations.Where(x => x.Id == identifier).FirstOrDefault());
+            return ValueTask.FromResult((Authorizations ?? new List<Authorization>()).Find(x => x.Id == identifier));
         }
 
         public IAsyncEnumerable<Authorization> FindBySubjectAsync(string subject, CancellationToken cancellationToken)
@@ -105,16 +99,16 @@ namespace OpenIddict.MemoryStorage.Stores
             throw new NotImplementedException();
         }
 
-        public ValueTask<string> GetApplicationIdAsync(Authorization authorization, CancellationToken cancellationToken)
+        public ValueTask<string?> GetApplicationIdAsync(Authorization authorization, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
 
             if (string.IsNullOrEmpty(authorization.ApplicationId))
             {
-                return ValueTask.FromResult<string>(null);
+                return ValueTask.FromResult<string?>(null);
             }
 
-            return ValueTask.FromResult(authorization.ApplicationId.ToString());
+            return ValueTask.FromResult<string?>(authorization.ApplicationId);
         }
 
         public ValueTask<TResult> GetAsync<TState, TResult>(Func<IQueryable<Authorization>, TState, IQueryable<TResult>> query, TState state, CancellationToken cancellationToken)
@@ -127,23 +121,23 @@ namespace OpenIddict.MemoryStorage.Stores
             throw new NotImplementedException();
         }
 
-        public ValueTask<string> GetIdAsync(Authorization authorization, CancellationToken cancellationToken)
+        public ValueTask<string?> GetIdAsync(Authorization authorization, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
 
-            return new ValueTask<string>(authorization.Id.ToString());
+            return new ValueTask<string?>(authorization.Id);
         }
 
-        public ValueTask<ImmutableDictionary<string, JsonElement>> GetPropertiesAsync(Authorization authorization, CancellationToken cancellationToken)
+        public async ValueTask<ImmutableDictionary<string, JsonElement>> GetPropertiesAsync(Authorization authorization, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
 
             if (authorization.Properties is null)
             {
-                return new ValueTask<ImmutableDictionary<string, JsonElement>>(ImmutableDictionary.Create<string, JsonElement>());
+                return await new ValueTask<ImmutableDictionary<string, JsonElement>>(ImmutableDictionary.Create<string, JsonElement>());
             }
 
-            using var document = JsonDocument.Parse(authorization.Properties.ToString(Formatting.None));
+            using var document = JsonDocument.Parse(authorization.Properties);
             var builder = ImmutableDictionary.CreateBuilder<string, JsonElement>();
 
             foreach (var property in document.RootElement.EnumerateObject())
@@ -151,7 +145,7 @@ namespace OpenIddict.MemoryStorage.Stores
                 builder[property.Name] = property.Value.Clone();
             }
 
-            return new ValueTask<ImmutableDictionary<string, JsonElement>>(builder.ToImmutable());
+            return await new ValueTask<ImmutableDictionary<string, JsonElement>>(builder.ToImmutable());
         }
 
         public ValueTask<ImmutableArray<string>> GetScopesAsync(Authorization authorization, CancellationToken cancellationToken)
@@ -166,25 +160,22 @@ namespace OpenIddict.MemoryStorage.Stores
             return new ValueTask<ImmutableArray<string>>(authorization.Scopes.ToImmutableArray());
         }
 
-        public ValueTask<string> GetStatusAsync(Authorization authorization, CancellationToken cancellationToken)
+        public ValueTask<string?> GetStatusAsync(Authorization authorization, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
-
-            return new ValueTask<string>(authorization.Status);
+            return new ValueTask<string?>(authorization.Status);
         }
 
-        public ValueTask<string> GetSubjectAsync(Authorization authorization, CancellationToken cancellationToken)
+        public ValueTask<string?> GetSubjectAsync(Authorization authorization, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
-
-            return new ValueTask<string>(authorization.Subject);
+            return new ValueTask<string?>(authorization.Subject);
         }
 
-        public ValueTask<string> GetTypeAsync(Authorization authorization, CancellationToken cancellationToken)
+        public ValueTask<string?> GetTypeAsync(Authorization authorization, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
-
-            return new ValueTask<string>(authorization.Type);
+            return new ValueTask<string?>(authorization.Type);
         }
 
         public ValueTask<Authorization> InstantiateAsync(CancellationToken cancellationToken)
@@ -207,7 +198,7 @@ namespace OpenIddict.MemoryStorage.Stores
             throw new NotImplementedException();
         }
 
-        public ValueTask SetApplicationIdAsync(Authorization authorization, string identifier, CancellationToken cancellationToken)
+        public ValueTask SetApplicationIdAsync(Authorization authorization, string? identifier, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
 
@@ -227,7 +218,10 @@ namespace OpenIddict.MemoryStorage.Stores
         {
             Check.NotNull(authorization, nameof(authorization));
 
-            authorization.CreationDate = date.Value.UtcDateTime;
+            if (date.HasValue)
+            {
+                authorization.CreationDate = date.Value.UtcDateTime;
+            }
 
             return default;
         }
@@ -236,7 +230,7 @@ namespace OpenIddict.MemoryStorage.Stores
         {
             Check.NotNull(authorization, nameof(authorization));
 
-            if (properties is null || properties.IsEmpty)
+            if (properties?.IsEmpty != false)
             {
                 authorization.Properties = null;
 
@@ -261,7 +255,7 @@ namespace OpenIddict.MemoryStorage.Stores
             writer.WriteEndObject();
             writer.Flush();
 
-            authorization.Properties = JObject.Parse(Encoding.UTF8.GetString(stream.ToArray()));
+            authorization.Properties = Encoding.UTF8.GetString(stream.ToArray());
 
             return default;
         }
@@ -282,29 +276,29 @@ namespace OpenIddict.MemoryStorage.Stores
             return default;
         }
 
-        public ValueTask SetStatusAsync(Authorization authorization, string status, CancellationToken cancellationToken)
+        public ValueTask SetStatusAsync(Authorization authorization, string? status, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
 
-            authorization.Status = status;
+            authorization.Status = status ?? "";
 
             return default;
         }
 
-        public ValueTask SetSubjectAsync(Authorization authorization, string subject, CancellationToken cancellationToken)
+        public ValueTask SetSubjectAsync(Authorization authorization, string? subject, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
 
-            authorization.Subject = subject;
+            authorization.Subject = subject ?? "";
 
             return default;
         }
 
-        public ValueTask SetTypeAsync(Authorization authorization, string type, CancellationToken cancellationToken)
+        public ValueTask SetTypeAsync(Authorization authorization, string? type, CancellationToken cancellationToken)
         {
             Check.NotNull(authorization, nameof(authorization));
 
-            authorization.Type = type;
+            authorization.Type = type ?? "";
 
             return default;
         }
@@ -318,7 +312,7 @@ namespace OpenIddict.MemoryStorage.Stores
         {
             if (!string.IsNullOrEmpty(_storageFileName))
             {
-                File.WriteAllText(_storageFileName, JsonConvert.SerializeObject(Authorizations));
+                File.WriteAllText(_storageFileName, JsonSerializer.Serialize(Authorizations));
             }
         }
     }
