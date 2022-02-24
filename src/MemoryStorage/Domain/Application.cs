@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace OpenIddict.MemoryStorage.Domain;
+namespace MemoryStorage.Domain;
 
 /// <summary>
 /// Represents an OpenIddict application.
@@ -12,17 +12,11 @@ namespace OpenIddict.MemoryStorage.Domain;
 [DebuggerDisplay("Id = {Id.ToString(),nq} ; ClientId = {ClientId,nq} ; Type = {Type,nq}")]
 public class Application
 {
-    /// <summary>
-    /// Initialize a new <see cref="CouchDbOpenIddictToken"/>.
-    /// </summary>
     public Application()
     {
         Id = Guid.NewGuid().ToString();
     }
 
-    /// <summary>
-    /// Initialize a new <see cref="CouchDbOpenIddictToken"/>.
-    /// </summary>
     public Application(string id)
     {
         if (string.IsNullOrEmpty(id))
@@ -33,9 +27,6 @@ public class Application
         Id = id;
     }
 
-    /// <summary>
-    /// Initialize a new <see cref="CouchDbOpenIddictApplication"/> from another.
-    /// </summary>
     public Application(Application other)
     {
         Id = other.Id;

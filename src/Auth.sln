@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TokenServer", "TokenServer\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "ConsoleApp\ConsoleApp.csproj", "{50BD06F2-8AE7-4056-A525-599757CDA031}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenIddict.MemoryStorage", "MemoryStorage\OpenIddict.MemoryStorage.csproj", "{7A281AA4-D6F4-4355-8505-3613CE8F9A98}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemoryStorage", "MemoryStorage\MemoryStorage.csproj", "{7A281AA4-D6F4-4355-8505-3613CE8F9A98}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

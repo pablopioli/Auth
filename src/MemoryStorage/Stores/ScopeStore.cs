@@ -1,12 +1,12 @@
-﻿using OpenIddict.Abstractions;
-using OpenIddict.MemoryStorage.DataSource;
-using OpenIddict.MemoryStorage.Domain;
+﻿using MemoryStorage.DataSource;
+using MemoryStorage.Domain;
+using OpenIddict.Abstractions;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Text.Json;
 using SR = OpenIddict.Abstractions.OpenIddictResources;
 
-namespace OpenIddict.MemoryStorage.Stores;
+namespace MemoryStorage.Stores;
 
 /// <summary>
 /// Provides methods allowing to manage the scopes stored in a database.

@@ -1,6 +1,7 @@
-﻿using OpenIddict.MemoryStorage.Domain;
+﻿using MemoryStorage.Domain;
+using System.Text.Json;
 
-namespace OpenIddict.MemoryStorage.DataSource;
+namespace MemoryStorage.DataSource;
 
 public class ApplicationDataSource
 {
@@ -15,5 +16,27 @@ public class ApplicationDataSource
     public void Remove(Application application)
     {
         _applications.Remove(application);
+    }
+
+    public static ApplicationDataSource FromFile(string file)
+    {
+        var app = new ApplicationDataSource();
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        var storedApps = JsonSerializer.Deserialize<List<Contracts.Application>>(File.ReadAllText(file), options);
+
+        if (storedApps != null)
+        {
+            foreach (var storedApp in storedApps)
+            {
+                app.Add(storedApp.ToApplication());
+            }
+        }
+
+        return app;
     }
 }

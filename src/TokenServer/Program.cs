@@ -1,10 +1,10 @@
+using MemoryStorage;
+using MemoryStorage.DataSource;
+using MemoryStorage.Domain;
+using MemoryStorage.Stores;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using OpenIddict.Abstractions;
-using OpenIddict.MemoryStorage;
-using OpenIddict.MemoryStorage.DataSource;
-using OpenIddict.MemoryStorage.Domain;
-using OpenIddict.MemoryStorage.Stores;
 using System.Text.Json;
 using TokenServer;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -37,31 +37,22 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddOpenIddict()
        .AddCore(options =>
        {
-           // Don't do this on production
-           // This is to check the produced tokens with a JWT decryption tool
            if (builder.Environment.IsDevelopment())
            {
+               // This is to check the produced tokens with a JWT decryption tool
                options.ReplaceApplicationManager(typeof(CustomEncryptionManager));
            }
 
            // Read the apps from a Json file or inject a sample one
-           var apps = new ApplicationDataSource();
-           var preconfiguredApps = new List<Application>();
-
+           ApplicationDataSource apps;
            if (File.Exists("applications.json"))
            {
-               preconfiguredApps = JsonSerializer.Deserialize<List<Application>>(File.ReadAllText("applications.json"));
-           }
-
-           if (preconfiguredApps.Count != 0)
-           {
-               foreach (var app in preconfiguredApps)
-               {
-                   apps.Add(app);
-               }
+               apps = ApplicationDataSource.FromFile("applications.json");
            }
            else
            {
+               apps = new ApplicationDataSource();
+
                apps.Add(new Application("console")
                {
                    ClientId = "clientcredentials",
@@ -165,18 +156,21 @@ builder.Services.AddOpenIddict()
            options.AddTokenStore<TokenStore>();
 
            // Save authorizations and tokens in json files
-           var storageOptions = new OpenIddictMemoryStorageOptions
-           {
-               AuthorizationFileStorage = "./auth.json",
-               TokenFileStorage = "./tokens.json"
-           };
-           builder.Services.AddSingleton(storageOptions);
+           builder.Services
+                  .AddOptions<OpenIddictMemoryStorageOptions>()
+                  .Configure(opt =>
+                     {
+                         opt.AuthorizationFileStorage = "./auth.json";
+                         opt.TokenFileStorage = "./tokens.json";
+                     });
        })
 
     .AddServer(options =>
     {
-        // Don't do this on production
-        options.DisableAccessTokenEncryption();
+        if (builder.Environment.IsDevelopment())
+        {
+            options.DisableAccessTokenEncryption();
+        }
 
         options.SetTokenEndpointUris("/connect/token");
         options.SetAuthorizationEndpointUris("/connect/authorize");
@@ -210,7 +204,5 @@ app.UseEndpoints(options =>
     options.MapControllers();
     options.MapDefaultControllerRoute();
 });
-
-app.UseWelcomePage();
 
 app.Run();

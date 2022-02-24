@@ -1,6 +1,6 @@
-﻿using OpenIddict.MemoryStorage.Domain;
+﻿using MemoryStorage.Domain;
 
-namespace OpenIddict.MemoryStorage.DataSource;
+namespace MemoryStorage.DataSource;
 
 public class ScopeDataSource
 {

@@ -1,31 +1,43 @@
-﻿using OpenIddict.Abstractions;
-using OpenIddict.MemoryStorage.Domain;
+﻿using MemoryStorage.Domain;
+using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
 using System.Collections.Immutable;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using SR = OpenIddict.Abstractions.OpenIddictResources;
 
-namespace OpenIddict.MemoryStorage.Stores;
+namespace MemoryStorage.Stores;
 
 public class TokenStore : IOpenIddictTokenStore<Token>
 {
-    private static List<Token> Tokens = new();
+    private static List<Token>? Tokens;
     private readonly string? _storageFileName;
 
     public TokenStore()
     { }
 
-    public TokenStore(OpenIddictMemoryStorageOptions storageOptions)
+    public TokenStore(IOptions<OpenIddictMemoryStorageOptions> storageOptions)
     {
-        if (!string.IsNullOrEmpty(storageOptions.TokenFileStorage))
+        if (Tokens == null)
         {
-            _storageFileName = Path.GetFullPath(storageOptions.TokenFileStorage);
-
-            if (File.Exists(_storageFileName))
+            if (string.IsNullOrEmpty(storageOptions.Value.TokenFileStorage))
             {
-                var content = File.ReadAllText(_storageFileName);
-                Tokens = JsonSerializer.Deserialize<List<Token>>(content) ?? new();
+                Tokens = new();
+            }
+            else
+            {
+                _storageFileName = Path.GetFullPath(storageOptions.Value.TokenFileStorage);
+
+                if (File.Exists(_storageFileName))
+                {
+                    var content = File.ReadAllText(_storageFileName);
+                    Tokens = JsonSerializer.Deserialize<List<Token>>(content) ?? new();
+                }
+                else
+                {
+                    Tokens = new();
+                }
             }
         }
     }
@@ -43,8 +55,13 @@ public class TokenStore : IOpenIddictTokenStore<Token>
     public ValueTask CreateAsync(Token token, CancellationToken cancellationToken)
     {
         Check.NotNull(token, nameof(token));
-        Tokens.Add(token);
-        SaveTokens();
+
+        if (Tokens != null)
+        {
+            Tokens.Add(token);
+            SaveTokens();
+        }
+
         return ValueTask.CompletedTask;
     }
 
@@ -84,7 +101,7 @@ public class TokenStore : IOpenIddictTokenStore<Token>
 
         async IAsyncEnumerable<Token> FindByAuthorizationIdAsyncInternal()
         {
-            foreach (var token in Tokens.Where(x => x.ApplicationId == identifier))
+            foreach (var token in (Tokens ?? new List<Token>()).Where(x => x.ApplicationId == identifier))
             {
                 yield return await Task.FromResult(token);
             }
@@ -98,7 +115,7 @@ public class TokenStore : IOpenIddictTokenStore<Token>
             throw new ArgumentException(SR.GetResourceString(SR.ID0195), nameof(identifier));
         }
 
-        var app = Tokens.Find(x => x.Id == identifier);
+        var app = (Tokens ?? new List<Token>()).Find(x => x.Id == identifier);
 
         return ValueTask.FromResult(app);
     }
@@ -110,7 +127,7 @@ public class TokenStore : IOpenIddictTokenStore<Token>
             throw new ArgumentException(SR.GetResourceString(SR.ID0195), nameof(identifier));
         }
 
-        return ValueTask.FromResult(Tokens.Find(x => x.ReferenceId == identifier));
+        return ValueTask.FromResult((Tokens ?? new List<Token>()).Find(x => x.ReferenceId == identifier));
     }
 
     public IAsyncEnumerable<Token> FindBySubjectAsync(string subject, CancellationToken cancellationToken)
@@ -403,15 +420,18 @@ public class TokenStore : IOpenIddictTokenStore<Token>
     {
         Check.NotNull(token, nameof(token));
 
-        var existingToken = Tokens.Find(x => x.Id == token.Id);
-        if (existingToken != null)
+        if (Tokens != null)
         {
-            Tokens.Remove(existingToken);
+            var existingToken = Tokens.Find(x => x.Id == token.Id);
+            if (existingToken != null)
+            {
+                Tokens.Remove(existingToken);
+            }
+
+            Tokens.Add(token);
+
+            SaveTokens();
         }
-
-        Tokens.Add(token);
-
-        SaveTokens();
 
         return ValueTask.CompletedTask;
     }

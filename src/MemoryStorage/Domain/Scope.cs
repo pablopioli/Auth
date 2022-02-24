@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json.Serialization;
 
-namespace OpenIddict.MemoryStorage.Domain;
+namespace MemoryStorage.Domain;
 
 /// <summary>
 /// Represents an OpenIddict scope.

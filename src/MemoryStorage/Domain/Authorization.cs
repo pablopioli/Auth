@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 
-namespace OpenIddict.MemoryStorage.Domain;
+namespace MemoryStorage.Domain;
 
 /// <summary>
 /// Represents an OpenIddict authorization.
@@ -10,7 +10,6 @@ namespace OpenIddict.MemoryStorage.Domain;
 [DebuggerDisplay("Id = {Id.ToString(),nq} ; Subject = {Subject,nq} ; Type = {Type,nq} ; Status = {Status,nq}")]
 public class Authorization
 {
-
     /// <summary>
     /// Initialize a new <see cref="Scope"/>.
     /// </summary>

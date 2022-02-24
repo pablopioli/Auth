@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Serialization;
 
-namespace OpenIddict.MemoryStorage.Domain;
+namespace MemoryStorage.Domain;
 
 /// <summary>
 /// Represents an OpenIddict token.
@@ -12,7 +12,7 @@ public class Token
     /// <summary>
     /// Initialize a new <see cref="Token"/>.
     /// </summary>
-    [JsonConstructorAttribute]
+    [JsonConstructor]
     public Token(string id)
     {
         if (string.IsNullOrEmpty(id))
