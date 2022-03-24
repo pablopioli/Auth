@@ -23,7 +23,6 @@ namespace TokenServer.Controllers
             {
                 // Note: the client credentials are automatically validated by OpenIddict:
                 // if client_id or client_secret are invalid, this action won't be invoked.
-
                 var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
                 // Subject (sub) is a required field, we use the client id as the subject identifier here.
@@ -65,8 +64,8 @@ namespace TokenServer.Controllers
                 throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
             var principal = new ClaimsPrincipal();
-            var identity = new ClaimsIdentity("test");
-            identity.AddClaim("A", "bb");
+            var identity = new ClaimsIdentity("User");
+            identity.AddClaim("Claim", "Value");
             principal.AddIdentity(identity);
 
             // Note: in this sample, the granted scopes match the requested scope
@@ -99,9 +98,6 @@ namespace TokenServer.Controllers
                     },
                     authenticationSchemes: CookieAuthenticationDefaults.AuthenticationScheme);
             }
-
-            //var tt =  User.FindFirstValue(ClaimTypes.NameIdentifier);
-            //var ttt = User.FindFirstValue(ClaimTypes.Email);
 
             // Create a new claims principal
             var claims = new List<Claim>

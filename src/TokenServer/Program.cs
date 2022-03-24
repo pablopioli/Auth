@@ -5,7 +5,9 @@ using MemoryStorage.Stores;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using OpenIddict.Abstractions;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using TestServer;
 using TokenServer;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -167,26 +169,43 @@ builder.Services.AddOpenIddict()
 
     .AddServer(options =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            options.DisableAccessTokenEncryption();
-        }
+        // Generate a JWT you can look into
+        options.DisableAccessTokenEncryption();
 
         options.SetTokenEndpointUris("/connect/token");
         options.SetAuthorizationEndpointUris("/connect/authorize");
-        options.SetUserinfoEndpointUris("/connect/userinfo");
+        options.SetRevocationEndpointUris("/connect/revocation");
+        options.SetLogoutEndpointUris("/connect/logout");
+        options.SetIntrospectionEndpointUris("/connect/introspect");
 
         options.AllowClientCredentialsFlow();
         options.AllowRefreshTokenFlow();
         options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange();
 
-        options.AddDevelopmentEncryptionCertificate()
-               .AddDevelopmentSigningCertificate();
+        // Use two certificates for signing and encryption
+        // You should load them from secure storage
+        const string encryptionCert = "enc.pfx";
+        if (!File.Exists(encryptionCert))
+        {
+            File.WriteAllBytes(encryptionCert, CertManager.CreateEncryptionCertificate());
+        }
+
+        const string signingCert = "sign.pfx";
+        if (!File.Exists(signingCert))
+        {
+            File.WriteAllBytes(signingCert, CertManager.CreateSigningCertificate());
+        }
+
+        options.AddEncryptionCertificate(new X509Certificate2(encryptionCert))
+               .AddSigningCertificate(new X509Certificate2(signingCert));
 
         options.UseAspNetCore()
                .EnableTokenEndpointPassthrough()
-               .EnableAuthorizationEndpointPassthrough();
+               .EnableAuthorizationEndpointPassthrough()
+               .EnableLogoutEndpointPassthrough()
+               .EnableUserinfoEndpointPassthrough();
     })
+
     .AddValidation();
 
 var app = builder.Build();
