@@ -3,7 +3,6 @@ using MemoryStorage.DataSource;
 using MemoryStorage.Domain;
 using MemoryStorage.Stores;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OAuth;
 using OpenIddict.Abstractions;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
@@ -19,22 +18,109 @@ if (builder.Environment.IsDevelopment())
     builder.Configuration.AddUserSecrets<Program>();
 }
 
+// Read the apps from a Json file or inject a sample one
+ApplicationDataSource apps;
+if (File.Exists("applications.json"))
+{
+    apps = ApplicationDataSource.FromFile("applications.json");
+}
+else
+{
+    apps = new ApplicationDataSource();
+
+    apps.Add(new Application("console")
+    {
+        ClientId = "clientcredentials",
+        ClientSecret = "123456",
+        Permissions = new[] {
+                                      Permissions.Endpoints.Token,
+                                      Permissions.GrantTypes.ClientCredentials,
+                                      Permissions.GrantTypes.RefreshToken,
+                                      Permissions.Prefixes.Scope + "api",
+                                     }
+    });
+
+    apps.Add(new Application("desktopapp")
+    {
+        ClientId = "desktopapp",
+        ClientSecret = "123456",
+        ConsentType = "Explicit",
+        RedirectUris = new List<string> { "http://127.0.0.1:23480" },
+        Permissions = new[] {
+                                      Permissions.Endpoints.Token,
+                                      Permissions.Endpoints.Authorization,
+                                      Permissions.GrantTypes.ClientCredentials,
+                                      Permissions.GrantTypes.AuthorizationCode,
+                                      Permissions.GrantTypes.RefreshToken,
+                                      Permissions.Prefixes.Scope + "api",
+                                      Permissions.ResponseTypes.Code
+                },
+        Requirements = new[] {
+                                      Requirements.Features.ProofKeyForCodeExchange
+                                   }
+    });
+
+    apps.Add(new Application("nativeclient")
+    {
+        ClientId = "nativeclient",
+        RedirectUris = new List<string> { "http://127.0.0.1:16101" },
+        Type = OpenIddictConstants.ClientTypes.Public,
+        Permissions = new[] {
+                                      Permissions.Endpoints.Token,
+                                      Permissions.Endpoints.Authorization,
+                                      Permissions.GrantTypes.AuthorizationCode,
+                                      Permissions.GrantTypes.RefreshToken,
+                                      Permissions.Prefixes.Scope + "api",
+                                      Permissions.ResponseTypes.Code
+                }
+    });
+
+    apps.Add(new Application("webapp")
+    {
+        ClientId = "webapp",
+        ClientSecret = "123456",
+        RedirectUris = new List<string> { "https://localhost:44901/signin-oidc" },
+        Permissions = new[] {
+                                      Permissions.Endpoints.Token,
+                                      Permissions.Endpoints.Authorization,
+                                      Permissions.GrantTypes.ClientCredentials,
+                                      Permissions.GrantTypes.AuthorizationCode,
+                                      Permissions.GrantTypes.RefreshToken,
+                                      Permissions.Prefixes.Scope + "api",
+                                      Permissions.ResponseTypes.Code
+},
+        Requirements = new[] {
+                                      Requirements.Features.ProofKeyForCodeExchange
+                 }
+    });
+}
+
+builder.Services.AddSingleton(apps);
+
+// Read the scopes from a Json file or inject a sample one
+var scopes = new ScopeDataSource();
+var preconfiguredScopes = builder.Configuration.GetValue<string>("SCOPES");
+if (!string.IsNullOrEmpty(preconfiguredScopes))
+{
+    var json = File.ReadAllText(preconfiguredScopes);
+    foreach (var scope in JsonSerializer.Deserialize<List<Scope>>(json))
+    {
+        scopes.Add(scope);
+    }
+}
+else
+{
+    scopes.Add(new Scope("api")
+    {
+        Name = "api"
+    });
+}
+builder.Services.AddSingleton(scopes);
+
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options => options.LoginPath = "/account/login")
-        .AddGitHub("GitHub", options =>
-        {
-            options.ClientId = builder.Configuration.GetValue<string>("github:clientid");
-            options.ClientSecret = builder.Configuration.GetValue<string>("github:clientsecret");
-
-            options.Scope.Add("user:email");
-
-            options.Events = new OAuthEvents
-            {
-                OnCreatingTicket = _ => Task.CompletedTask
-            };
-        });
+        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options => options.LoginPath = "/account/login");
 
 builder.Services.AddOpenIddict()
        .AddCore(options =>
@@ -44,105 +130,6 @@ builder.Services.AddOpenIddict()
                // This is to check the produced tokens with a JWT decryption tool
                options.ReplaceApplicationManager(typeof(CustomEncryptionManager));
            }
-
-           // Read the apps from a Json file or inject a sample one
-           ApplicationDataSource apps;
-           if (File.Exists("applications.json"))
-           {
-               apps = ApplicationDataSource.FromFile("applications.json");
-           }
-           else
-           {
-               apps = new ApplicationDataSource();
-
-               apps.Add(new Application("console")
-               {
-                   ClientId = "clientcredentials",
-                   ClientSecret = "123456",
-                   Permissions = new[] {
-                                      Permissions.Endpoints.Token,
-                                      Permissions.GrantTypes.ClientCredentials,
-                                      Permissions.GrantTypes.RefreshToken,
-                                      Permissions.Prefixes.Scope + "api",
-                                     }
-               });
-
-               apps.Add(new Application("desktopapp")
-               {
-                   ClientId = "desktopapp",
-                   ClientSecret = "123456",
-                   ConsentType = "Explicit",
-                   RedirectUris = new List<string> { "http://127.0.0.1:23480" },
-                   Permissions = new[] {
-                                      Permissions.Endpoints.Token,
-                                      Permissions.Endpoints.Authorization,
-                                      Permissions.GrantTypes.ClientCredentials,
-                                      Permissions.GrantTypes.AuthorizationCode,
-                                      Permissions.GrantTypes.RefreshToken,
-                                      Permissions.Prefixes.Scope + "api",
-                                      Permissions.ResponseTypes.Code
-                },
-                   Requirements = new[] {
-                                      Requirements.Features.ProofKeyForCodeExchange
-                                   }
-               });
-
-               apps.Add(new Application("nativeclient")
-               {
-                   ClientId = "nativeclient",
-                   RedirectUris = new List<string> { "http://127.0.0.1:16101" },
-                   Type = OpenIddictConstants.ClientTypes.Public,
-                   Permissions = new[] {
-                                      Permissions.Endpoints.Token,
-                                      Permissions.Endpoints.Authorization,
-                                      Permissions.GrantTypes.AuthorizationCode,
-                                      Permissions.GrantTypes.RefreshToken,
-                                      Permissions.Prefixes.Scope + "api",
-                                      Permissions.ResponseTypes.Code
-                }
-               });
-
-               apps.Add(new Application("webapp")
-               {
-                   ClientId = "webapp",
-                   ClientSecret = "123456",
-                   RedirectUris = new List<string> { "https://localhost:44901/signin-oidc" },
-                   Permissions = new[] {
-                                      Permissions.Endpoints.Token,
-                                      Permissions.Endpoints.Authorization,
-                                      Permissions.GrantTypes.ClientCredentials,
-                                      Permissions.GrantTypes.AuthorizationCode,
-                                      Permissions.GrantTypes.RefreshToken,
-                                      Permissions.Prefixes.Scope + "api",
-                                      Permissions.ResponseTypes.Code
-},
-                   Requirements = new[] {
-                                      Requirements.Features.ProofKeyForCodeExchange
-                 }
-               });
-           }
-
-           builder.Services.AddSingleton(apps);
-
-           // Read the scopes from a Json file or inject a sample one
-           var scopes = new ScopeDataSource();
-           var preconfiguredScopes = builder.Configuration.GetValue<string>("SCOPES");
-           if (!string.IsNullOrEmpty(preconfiguredScopes))
-           {
-               var json = File.ReadAllText(preconfiguredScopes);
-               foreach (var scope in JsonSerializer.Deserialize<List<Scope>>(json))
-               {
-                   scopes.Add(scope);
-               }
-           }
-           else
-           {
-               scopes.Add(new Scope("api")
-               {
-                   Name = "api"
-               });
-           }
-           builder.Services.AddSingleton(scopes);
 
            // Use in-memory storage
            options.SetDefaultApplicationEntity<Application>();
@@ -208,10 +195,33 @@ builder.Services.AddOpenIddict()
 
     .AddValidation();
 
+var useCors = apps.Applications.Any(x => x.CorsDomains.Any(y => !string.IsNullOrWhiteSpace(y)));
+if (useCors)
+{
+    var corsDomains = new List<string>();
+    foreach (var configuredApp in apps.Applications)
+    {
+        corsDomains.AddRange(configuredApp.CorsDomains.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(name: "cors",
+                          builder => builder.WithOrigins(corsDomains.ToArray())
+                                            .AllowAnyMethod()
+                                            .AllowAnyHeader());
+    });
+}
+
 var app = builder.Build();
 
 app.UseDeveloperExceptionPage();
 app.UseStaticFiles();
+
+if (useCors)
+{
+    app.UseCors("cors");
+}
 
 app.UseRouting();
 

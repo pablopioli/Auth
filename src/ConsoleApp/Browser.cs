@@ -1,14 +1,14 @@
-﻿using System;
+﻿using IdentityModel.OidcClient.Browser;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using IdentityModel.OidcClient.Browser;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 
 namespace ConsoleApp
 {
@@ -28,28 +28,26 @@ namespace ConsoleApp
 
         public async Task<BrowserResult> InvokeAsync(BrowserOptions options, CancellationToken cancellationToken = default)
         {
-            using (var listener = new LoopbackHttpListener(_port))
+            using var listener = new LoopbackHttpListener(_port);
+            OpenBrowser(options.StartUrl);
+
+            try
             {
-                OpenBrowser(options.StartUrl);
+                var result = await listener.WaitForCallbackAsync();
+                if (string.IsNullOrWhiteSpace(result))
+                {
+                    return new BrowserResult { ResultType = BrowserResultType.UnknownError, Error = "Empty response." };
+                }
 
-                try
-                {
-                    var result = await listener.WaitForCallbackAsync();
-                    if (string.IsNullOrWhiteSpace(result))
-                    {
-                        return new BrowserResult { ResultType = BrowserResultType.UnknownError, Error = "Empty response." };
-                    }
-
-                    return new BrowserResult { Response = result, ResultType = BrowserResultType.Success };
-                }
-                catch (TaskCanceledException ex)
-                {
-                    return new BrowserResult { ResultType = BrowserResultType.Timeout, Error = ex.Message };
-                }
-                catch (Exception ex)
-                {
-                    return new BrowserResult { ResultType = BrowserResultType.UnknownError, Error = ex.Message };
-                }
+                return new BrowserResult { Response = result, ResultType = BrowserResultType.Success };
+            }
+            catch (TaskCanceledException ex)
+            {
+                return new BrowserResult { ResultType = BrowserResultType.Timeout, Error = ex.Message };
+            }
+            catch (Exception ex)
+            {
+                return new BrowserResult { ResultType = BrowserResultType.UnknownError, Error = ex.Message };
             }
         }
 
@@ -117,6 +115,8 @@ namespace ConsoleApp
                 await Task.Delay(500);
                 _host.Dispose();
             });
+
+            GC.SuppressFinalize(this);
         }
 
         void Configure(IApplicationBuilder app)
@@ -135,11 +135,9 @@ namespace ConsoleApp
                     }
                     else
                     {
-                        using (var sr = new StreamReader(ctx.Request.Body, Encoding.UTF8))
-                        {
-                            var body = await sr.ReadToEndAsync();
-                            SetResult(body, ctx);
-                        }
+                        using var sr = new StreamReader(ctx.Request.Body, Encoding.UTF8);
+                        var body = await sr.ReadToEndAsync();
+                        SetResult(body, ctx);
                     }
                 }
                 else

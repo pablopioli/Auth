@@ -10,6 +10,7 @@ internal class Application
     public List<string> RedirectUris { get; set; } = new();
     public List<string> Permissions { get; set; } = new();
     public List<string> Requirements { get; set; } = new();
+    public List<string> CorsDomains { get; set; } = new List<string>();
 
     internal Domain.Application ToApplication()
     {
@@ -22,7 +23,8 @@ internal class Application
             ConsentType = ConsentType,
             RedirectUris = RedirectUris,
             Permissions = Permissions,
-            Requirements = Requirements
+            Requirements = Requirements,
+            CorsDomains = CorsDomains
         };
     }
 }

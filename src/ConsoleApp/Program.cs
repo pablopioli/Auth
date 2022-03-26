@@ -3,15 +3,14 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp
 {
-    class Program
+    static class Program
     {
-        static async Task Main(string[] args)
+        static async Task Main()
         {
             while (true)
             {
                 Console.WriteLine("1: Test client credentials");
                 Console.WriteLine("2: Test authorization code with browser login");
-                Console.WriteLine("3: GitHub authentication");
                 Console.WriteLine("Any other key: Exit");
 
                 var option = Console.ReadKey();

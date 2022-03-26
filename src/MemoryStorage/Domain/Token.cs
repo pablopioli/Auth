@@ -46,31 +46,31 @@ public class Token
     /// Gets or sets the client identifier used to find the client in the database.
     /// </summary>
     [JsonPropertyName("id")]
-    public virtual string Id { get; internal set; }
+    public string? Id { get; internal set; }
 
     /// <summary>
     /// Gets or sets the identifier of the application associated with the current token.
     /// </summary>
     [JsonPropertyName("application_id")]
-    public virtual string ApplicationId { get; set; } = string.Empty;
+    public string ApplicationId { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the identifier of the authorization associated with the current token.
     /// </summary>
     [JsonPropertyName("authorization_id")]
-    public virtual string AuthorizationId { get; set; } = string.Empty;
+    public string AuthorizationId { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the UTC creation date of the current token.
     /// </summary>
     [JsonPropertyName("creation_date")]
-    public virtual DateTime? CreationDate { get; set; }
+    public DateTime? CreationDate { get; set; }
 
     /// <summary>
     /// Gets or sets the UTC expiration date of the current token.
     /// </summary>
     [JsonPropertyName("expiration_date")]
-    public virtual DateTime? ExpirationDate { get; set; }
+    public DateTime? ExpirationDate { get; set; }
 
     /// <summary>
     /// Gets or sets the payload of the current token, if applicable.
@@ -78,19 +78,19 @@ public class Token
     /// and may be encrypted for security reasons.
     /// </summary>
     [JsonPropertyName("payload")]
-    public virtual string Payload { get; set; } = string.Empty;
+    public string Payload { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the additional properties associated with the current token.
     /// </summary>
     [JsonPropertyName("properties")]
-    public virtual string? Properties { get; set; }
+    public string? Properties { get; set; }
 
     /// <summary>
     /// Gets or sets the UTC redemption date of the current token.
     /// </summary>
     [JsonPropertyName("redemption_date")]
-    public virtual DateTime? RedemptionDate { get; set; }
+    public DateTime? RedemptionDate { get; set; }
 
     /// <summary>
     /// Gets or sets the reference identifier associated
@@ -99,23 +99,23 @@ public class Token
     /// and may be hashed or encrypted for security reasons.
     /// </summary>
     [JsonPropertyName("reference_id")]
-    public virtual string ReferenceId { get; set; } = string.Empty;
+    public string ReferenceId { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the status of the current token.
     /// </summary>
     [JsonPropertyName("status")]
-    public virtual string Status { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the subject associated with the current token.
     /// </summary>
     [JsonPropertyName("subject")]
-    public virtual string Subject { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the type of the current token.
     /// </summary>
     [JsonPropertyName("type")]
-    public virtual string Type { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
 }
