@@ -162,6 +162,7 @@ builder.Services.AddOpenIddict()
         options.SetTokenEndpointUris("/connect/token");
         options.SetAuthorizationEndpointUris("/connect/authorize");
         options.SetRevocationEndpointUris("/connect/revocation");
+        options.SetUserinfoEndpointUris("/connect/userinfo");
         options.SetLogoutEndpointUris("/connect/logout");
         options.SetIntrospectionEndpointUris("/connect/introspect");
 
@@ -186,11 +187,13 @@ builder.Services.AddOpenIddict()
         options.AddEncryptionCertificate(new X509Certificate2(encryptionCert))
                .AddSigningCertificate(new X509Certificate2(signingCert));
 
+        options.RegisterScopes(Scopes.Email, Scopes.Profile);
+
         options.UseAspNetCore()
                .EnableTokenEndpointPassthrough()
                .EnableAuthorizationEndpointPassthrough()
-               .EnableLogoutEndpointPassthrough()
-               .EnableUserinfoEndpointPassthrough();
+               .EnableUserinfoEndpointPassthrough()
+               .EnableLogoutEndpointPassthrough();
     })
 
     .AddValidation();
